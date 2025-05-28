@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { Message } from '../types/chat';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { processQuery } from '../utils/chatUtils';
 
 export const useLegalQueries = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,23 +30,11 @@ export const useLegalQueries = () => {
     setErrorMessage(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('legal-query', {
-        body: { query: content }
-      });
-
-      if (error) throw error;
-
-      const response: Message = {
-        role: 'assistant',
-        content: data.answer,
-        sources: data.sources,
-        actions: data.actions
-      };
-
+      const response = await processQuery(content);
       setMessages(prev => [...prev, response]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      setErrorMessage('Sorry, there was a problem connecting to our legal database. Please try again.');
+      console.error('Error processing message:', error);
+      setErrorMessage('Sorry, there was a problem processing your query. Please try again.');
     } finally {
       setIsLoading(false);
     }
